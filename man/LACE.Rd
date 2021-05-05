@@ -10,6 +10,7 @@ LACE(
   alpha = NULL,
   beta = NULL,
   initialization = NULL,
+  random_tree = FALSE,
   keep_equivalent = TRUE,
   check_indistinguishable = TRUE,
   num_rs = 50,
@@ -37,7 +38,11 @@ maximum-likelihood is returned.}
 \item{beta}{False negative error rate provided as list of elements; if a vector of beta (and alpha) is provided, the inference is performed for multiple values and the solution at 
 maximum-likelihood is returned.}
 
-\item{initialization}{Starting point of the mcmc; if not provided, a random starting point is used.}
+\item{initialization}{Binary matrix representing a perfect philogeny clonal tree; clones are rows and mutations are columns. 
+This parameter overrides "random_tree".}
+
+\item{random_tree}{Boolean. Shall I start MCMC search from a random tree? If FALSE (default) and initialization is NULL, search 
+is started from a TRaIT tree (BMC Bioinformatics . 2019 Apr 25;20(1):210.  doi: 10.1186/s12859-019-2795-4).}
 
 \item{keep_equivalent}{Boolean. Shall I return results (B and C) at equivalent likelihood with the best returned solution?}
 
@@ -81,7 +86,7 @@ inference = LACE(D = longitudinal_sc_variants,
                  lik_w = c(0.2308772,0.2554386,0.2701754,0.2435088),
                  alpha = list(c(0.10,0.05,0.05,0.05)),
                  beta = list(c(0.10,0.05,0.05,0.05)),
-                 keep_equivalent = FALSE,
+                 keep_equivalent = TRUE,
                  num_rs = 5,
                  num_iter = 10,
                  n_try_bs = 5,
