@@ -1,6 +1,6 @@
 Package: LACE
-Version: 1.99.4
-Date: 2022-04-12
+Version: 1.99.5
+Date: 2022-04-15
 Title: Longitudinal Analysis of Cancer Evolution (LACE)
 Authors@R: c(person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@unimib.it",
                 comment = c(ORCID = "0000-0002-6087-2666")),
@@ -12,6 +12,8 @@ Authors@R: c(person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazz
     person("Gianluca","Ascolani",role=c("aut"),email="gianluca.ascolani@unimib.it"))
 Depends: R (>= 4.1.0)
 Imports:
+    curl,
+    igraph,
     foreach,
     doParallel,
     sortable,
@@ -19,7 +21,6 @@ Imports:
     data.tree, 
     graphics, 
     grDevices, 
-    igraph, 
     parallel, 
     RColorBrewer, 
     Rfast, 
@@ -41,7 +42,6 @@ Imports:
     htmltools, 
     htmlwidgets,
     bsplus,
-    TRONCO,
     shiny,
     shinythemes,
     shinyFiles,

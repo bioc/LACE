@@ -9,6 +9,7 @@
 #'
 #' @import foreach
 #' @import doParallel
+#' @rawNamespace import(curl, except = c("parse_date"))
 #' @import sortable
 #' @rawNamespace import(shiny, except = c("runExample", "dataTableOutput", "renderDataTable","validate"))
 #' @import shinythemes
@@ -28,14 +29,13 @@
 #' @import shinyBS
 #' @import bsplus
 #' @import shinydashboard
-#' @import TRONCO
 #' @import callr
 
 ## Declare name
 
 utils::globalVariables(".my_actual_wd",
                        package = "LACE",
-                       add = F)
+                       add = FALSE)
 
 
 #' @md
@@ -77,6 +77,7 @@ utils::globalVariables(".my_actual_wd",
 #' @usage 
 #' LACE2()
 #' 
+#' @return The GUI
 #' 
 #' @note 
 #' The function `LACE` is still available for retrocompatibility.
