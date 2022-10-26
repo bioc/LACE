@@ -10,35 +10,37 @@
 
 ### Libraries needed by the app.
 
-library(biomaRt, exclude = c("show", "select"))
-library(foreach)
-library(doParallel)
-library(sortable)
-library(shiny,
+suppressMessages(library(biomaRt, exclude = c("show", "select")))
+suppressMessages(library(foreach))
+suppressMessages(library(doParallel))
+suppressMessages(library(sortable))
+suppressMessages(library(shiny,
         exclude = c("runExample",
                     "dataTableOutput",
                     "renderDataTable",
                     "validate",
-                    "show"))
-library(shinythemes)
-library(dplyr)
-library(tidyr)
-library(readr)
-library(shinyFiles)
-library(shinyjs, exclude = c("show"))
+                    "show")))
+suppressMessages(library(shinythemes))
+suppressMessages(library(dplyr))
+suppressMessages(library(tidyr))
+suppressMessages(library(readr))
+suppressMessages(library(shinyFiles))
+suppressMessages(library(shinyjs, exclude = c("show")))
 ## library(shinyBS)
-library(jsonlite)
-library(configr)
+suppressMessages(library(jsonlite))
+suppressMessages(library(configr))
 ## library(readr)
-library(DT)
-library(stringr)
-library(tools)
-library(fs)
-library(data.table, exclude = c("first", "last", "between"))
-library(htmltools)
-library(shinyBS)
-library(bsplus)
-library(shinydashboard)
+suppressMessages(library(DT))
+suppressMessages(library(stringr))
+suppressMessages(library(tools))
+suppressMessages(library(fs))
+suppressMessages(library(data.table, exclude = c("first", "last", "between")))
+suppressMessages(library(htmltools))
+suppressMessages(library(shinyBS))
+suppressMessages(library(bsplus))
+suppressMessages(library(shinydashboard))
+suppressMessages(library(shinyvalidate))
+suppressMessages(library(logr))
 #library(widgetframe)
 
 ### Code
@@ -91,6 +93,9 @@ jsCode <- "shinyBS.addTooltip = function(id, type, opts) {
   }
 }"
 
+#log2_print <- function(x, msg = "") {log_print(print(paste(pre,x)), console = FALSE)}
+#log2_print <- function(x, msg = "") {print(paste(pre,x), console = FALSE)}
+log2_print <- function(x, msg = "") {}
 
 ### compare_named_lists --
 ###
@@ -218,9 +223,10 @@ ui <- fluidPage(
   ## extendShinyjs(text = jsCode, functions = c("addTooltip")),
   ## extendShinyjs(text = jsCode, functions = c("bsPopover")),
 
-  use_bs_popover(),
+  
 
-  tags$head(tags$style(HTML(".bucket-list-container {min-height: 290px; max-height: 300px;}")),
+  tags$head(tags$style("@import url(https://use.fontawesome.com/releases/v5.7.2/css/all.css);"),
+            tags$style(HTML(".bucket-list-container {min-height: 290px; max-height: 300px;}")),
             tags$style(HTML(".rank-list {min-height: 100px; max-height: 240px; overflow-y: scroll;}")),
             #tags$style(HTML(".shinyDirectories, .shinyFiles { width: 100%; direction: rtl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}")),
             tags$style(HTML(".shinyDirectories, .shinyFiles { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}")),
@@ -228,6 +234,8 @@ ui <- fluidPage(
             tags$style(HTML(".content-wrapper, .right-side {background-color: #ffffff;}"))
   ),
 
+  use_bs_popover(),
+  
   dashboardPage(
     dashboardHeader(
       title = "LACE 2.0",
@@ -1151,12 +1159,12 @@ server <- function(input, output, session) {
                icon = icon("history"))
 
     output$recent_projects <- renderMenu({recent_projects})
-    print(recent_projects)
+    log2_print(recent_projects, msg = "LACEview: recent projects =")
 
   }, once = TRUE )
 
   observeEvent( input[["sidemenu"]],{
-    print(input[["sidemenu"]])
+    log2_print(input[["sidemenu"]], msg = "LACEview:")
     #browser()
     if (input[["sidemenu"]] == "Small dataset") {
       inputs[["demo"]]("Small_dataset")
@@ -2199,8 +2207,8 @@ server <- function(input, output, session) {
     if(length(av_vcf_out_dir_())==0)
       return()
 
-    print('av_exec')
-    print(paste("av_vcf_out_dir_()", av_vcf_out_dir_()))
+    log2_print('av_exec', msg = "LACEview:")
+    log2_print(paste("av_vcf_out_dir_()", av_vcf_out_dir_()), msg = "LACEview:")
 
     Opt = list()
     Opt$StoredFile <- file.path(config_path,".config_02_av.yml")

@@ -30,6 +30,8 @@
 #' @import bsplus
 #' @import shinydashboard
 #' @import callr
+#' @import shinyvalidate
+#' @import logr
 
 ## Declare name
 
@@ -40,7 +42,7 @@ utils::globalVariables(".my_actual_wd",
 
 #' @md
 #' @title LACE Processing and Analysis Interface
-#' @description `LACE2` displays a Shiny user interface to
+#' @description `LACEview` displays a Shiny user interface to
 #'     handle the VCF and BAM files processing that is needed to
 #'     construct the input for the LACE inference algorithms.
 #'     The function generates also the maximum likelihood longitudinal 
@@ -75,15 +77,17 @@ utils::globalVariables(".my_actual_wd",
 
 #' 
 #' @usage 
-#' LACE2()
+#' LACEview()
 #' 
 #' @return The GUI
 #' 
 #' @note 
 #' The function `LACE` is still available for retrocompatibility.
 #' 
+#' @import logr
+#' 
 #' @export
-LACE2 <- function() {
+LACEview <- function() {
     appDir <- system.file("shinyapp", package = "LACE")
     if (appDir == "") {
         stop("LACE: Could not find package directory.",
@@ -95,11 +99,16 @@ LACE2 <- function() {
 
     .GlobalEnv$.my_actual_wd <- getwd()
     .GlobalEnv$.my_pkg_dir <- appDir
+    .GlobalEnv$.my_tmp_file <- file.path(tempdir(), "test.log")
+    .GlobalEnv$.my_lf <- logr::log_open(.GlobalEnv$.my_tmp_file)
+    
     print(.GlobalEnv$.my_actual_wd)
+    print(.GlobalEnv$.my_tmp_file)
 
     on.exit({
         setwd(.my_actual_wd)
         rm(list = c(".my_actual_wd"), pos = .GlobalEnv)
+        logr::log_close()
     })
 
     shiny::runApp(file.path(appDir, 'app.R'), display.mode = "normal")
