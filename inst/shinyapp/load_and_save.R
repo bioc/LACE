@@ -126,12 +126,15 @@ va_doLoad_c <- function() {
   if( 'va_verified_genes' %in% names(loaded_input)) {
     if(!is.null(loaded_input[['va_verified_genes']])) {
       #if(!is.integer(loaded_input[[i]])) {
-      # - log2_print(loaded_input[['va_verified_genes']])
+      log2_print(loaded_input[['va_verified_genes']])
       #if (dir.exists(parseDirPath(roots=roots_dir, loaded_input[[i]])))
       inputs[['va_verified_genes']](loaded_input[['va_verified_genes']])
       inputs[['va_list_genes']](loaded_input[['va_list_genes']])
 
-      updateSelectizeInput(session, 'va_verified_genes', selected = inputs[['va_verified_genes']](), choices = inputs[['va_list_genes']](), server = TRUE)
+      updateSelectizeInput(session, 'va_verified_genes', 
+                           selected = inputs[['va_verified_genes']](), 
+                           choices = inputs[['va_list_genes']](), 
+                           server = TRUE)
       #}
     }
   }
@@ -321,7 +324,7 @@ load_all_configs <- function(project_folder,
 
 
   inputs[["load_all_configs"]](FALSE)
-
+  browser()
   ## Change to project folder
   setwd(inputs[["project_folder_std"]]())
 
@@ -375,6 +378,7 @@ load_all_configs <- function(project_folder,
 
 observeEvent(inputs[["load_all_configs"]](),{
   if(inputs[["load_all_configs"]]()) {
+    browser()
     inf_doLoad_c()
     for(i in c("inf_alpha", "inf_beta")) {
       if( i %in% names(inf_loaded_input_())) {
@@ -383,7 +387,7 @@ observeEvent(inputs[["load_all_configs"]](),{
         colnames(x)[1]=""
         session$userData[["ed_table_react_list_obj"]]$obj[[i]]$x$data <- x
         session$userData[["ed_table_react_list"]][[i]]$x$data <- x
-        # - log2_print(session$userData[["ed_table_react_list"]][[i]]$x$data)
+        log2_print(session$userData[["ed_table_react_list"]][[i]]$x$data)
       }
     }
   }
@@ -471,16 +475,13 @@ load_all_configs2 <- function(project_folder,
                 check <- FALSE
                 updateSelectizeInput(session,
                                      'va_verified_genes',
-                                     choices =
-                                       inputs[['va_list_genes']](),
+                                     choices = inputs[['va_list_genes']](),
                                      server = TRUE)
               }
               if (id=="va_verified_genes") {
                 check <- FALSE
-                updateSelectizeInput(session,
-                                     'va_verified_genes',
-                                     selected =
-                                       inputs[['va_verified_genes']](),
+                updateSelectizeInput(session, 'va_verified_genes',
+                                     selected = inputs[['va_verified_genes']](),
                                      server = TRUE)
               }
 

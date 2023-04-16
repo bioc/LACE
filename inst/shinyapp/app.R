@@ -22,6 +22,7 @@ suppressMessages(library(shiny,
                     "show")))
 suppressMessages(library(shinythemes))
 suppressMessages(library(dplyr))
+suppressMessages(library(forcats))
 suppressMessages(library(tidyr))
 suppressMessages(library(readr))
 suppressMessages(library(shinyFiles))
@@ -41,6 +42,8 @@ suppressMessages(library(bsplus))
 suppressMessages(library(shinydashboard))
 suppressMessages(library(shinyvalidate))
 suppressMessages(library(logr))
+suppressMessages(library(ggplot2))
+suppressMessages(library(svglite))
 #library(widgetframe)
 
 ### Code
@@ -93,9 +96,12 @@ jsCode <- "shinyBS.addTooltip = function(id, type, opts) {
   }
 }"
 
-#log2_print <- function(x, msg = "") {log_print(print(paste(pre,x)), console = FALSE)}
-#log2_print <- function(x, msg = "") {print(paste(pre,x), console = FALSE)}
-log2_print <- function(x, msg = "") {}
+log2_print <- function(x, msg = "") {
+  if (str_length(msg)>0)
+    log_print(msg, console = FALSE, blank_after = FALSE, hide_notes =TRUE)
+  log_print(x, console = FALSE, blank_after = FALSE, hide_notes =FALSE)
+}
+#log2_print <- function(x, msg = "") {}
 
 ### compare_named_lists --
 ###
@@ -248,6 +254,16 @@ ui <- fluidPage(
     dashboardSidebar(
 
       sidebarMenu( id = "sidemenu",
+        hidden(menuItem("hidden_menu31", tabName = "hidden_menu31")),
+        menuItem(
+          "Application",
+          tabName = "application",
+          icon = icon("braille"), #icon("window-maximize"),
+          hidden(menuItem("hidden_menu3", tabName = "hidden_menu3")),
+          menuSubItem("New Project", tabName = "new_proj", icon = icon("layer-group") ),
+          menuSubItem("Quit", tabName = "quit_app", icon = icon("power-off") )#,
+          #actionButton("quit_app", "Quit")
+        ),
         hidden(menuItem("hidden_menu", tabName = "hidden_menu")),
         menuItem(
           "Projects",
@@ -305,13 +321,22 @@ ui <- fluidPage(
           tabName = "dashboard",
           icon = icon("cube"),
           hidden(menuItem("hidden_menu2", tabName = "hidden_menu2")),
+          #menuSubItem("Close Project", tabName = "close_proj", icon = icon("times-circle") ),
+          #actionButton("close_proj", "Close Project"),
           menuItem(
             "Save and Load Current Tab",
-            tabName = "dashboard",
+            tabName = "dashboard_save",
             icon = icon("th"),
-            inline(actionButton("save_tab", "save")),
-            inline(actionButton("load_tab", "load"))
-          )#,
+            hidden(menuItem("hidden_menu_SLpre", tabName = "hidden_menu_SLpre")),
+            menuSubItem("Save", tabName = "save_tab", icon = icon("download") ),
+            menuSubItem("Load", tabName = "load_tab", icon = icon("upload") ),
+            menuSubItem("Reset project", tabName = "load_tabs"),
+            hidden(menuSubItem("hidden_menu_SL", tabName = "hidden_menu_SL"))
+            #inline(actionButton("save_tab", "Save")),
+            #inline(actionButton("load_tab", "Load"))
+          )
+        )#,
+        #,
           # menuItem(
           #   "Save and Load All Tabs",
           #   tabName = "dashboard",
@@ -325,7 +350,7 @@ ui <- fluidPage(
           #   icon = icon("th"),
           #   inline(actionButton("save_tab", "Clean and restore "))
           # )
-        )
+        
       ),
       collapsed = FALSE
     ),
@@ -510,10 +535,10 @@ ui <- fluidPage(
                              numericInput(
                                inputId = "thr_alleles_ratio",
                                label = "Alternate frequency",
-                               min = 0,
-                               max = 1,
-                               step = 0.05,
-                               value = 0.8
+                               min = 1,
+                               max = 500,
+                               step = 1,
+                               value = 2
                              ) %>%
                                make_shiny_help_popover(
                                  "Cell alternate allele frequency",
@@ -525,7 +550,7 @@ ui <- fluidPage(
                                label = "MAF",
                                min = 0.01,
                                max = 0.5,
-                               step = 0.05,
+                               step = 0.005,
                                value = 0.01
                              ) %>%
                                make_shiny_help_popover(
@@ -538,8 +563,8 @@ ui <- fluidPage(
                                label = "Variant frequency",
                                min = 0.,
                                max = 1,
-                               step = 0.1,
-                               value = 0.5
+                               step = 0.01,
+                               value = 0.01
                              ) %>%
                                make_shiny_help_popover(
                                  "Sample variant frequency",
@@ -613,14 +638,14 @@ ui <- fluidPage(
                              tags$h3("Variant filters"),
                              br(),
                              helpText(text[["va_tab_help"]]),
-
+                             fluidRow(column(4,
                              br(), br(),
 
                              numericInput(
                                inputId = "va_depth_minimum",
                                label = "Minimum depth",
-                               min = 1,
-                               max = 10,
+                               min = 0,
+                               max = 500,
                                step = 1,
                                value = 3
                              ) %>%
@@ -635,7 +660,7 @@ ui <- fluidPage(
                                label = "Max missing value",
                                min = 0.0,
                                max = 1.0,
-                               step = 0.1,
+                               step = 0.05,
                                value = 0.4
                              ) %>%
                                make_shiny_help_popover(
@@ -648,9 +673,9 @@ ui <- fluidPage(
                                inputId = "va_minumum_median_total", # minimum median depth for total reads
                                label = "Site minumum median depth:",
                                min = 0,
-                               max = 50,
+                               max = 500,
                                step = 1,
-                               value = 10
+                               value = 8
                              ) %>%
                                make_shiny_help_popover(
                                  "Minumum median depth per site",
@@ -661,8 +686,8 @@ ui <- fluidPage(
                              numericInput(
                                inputId = "va_minumum_median_mutation", # minimum median depth for reads supporting mutations
                                label = "Mutation minimum median depth",
-                               min = 0.0,
-                               max = 50,
+                               min = 0,
+                               max = 500,
                                step = 1,
                                value = 4
                              ) %>%
@@ -671,7 +696,9 @@ ui <- fluidPage(
                                  text[["va_minumum_median_mutation"]]
                                ),
                              br(),
-
+                             br(),
+                             br(),
+                             
                              selectizeInput(
                                'va_verified_genes',
                                'Select variant genes',
@@ -693,19 +720,31 @@ ui <- fluidPage(
                                  "Variant gene selection",
                                  text[["va_verified_genes"]]
                                ),
-                             br(),
-                             br(),
+                             ),
+                             column(8,
+                                    br(),
+                                    br(),
+                                    #plot
+                                    plotOutput('va_filtered_bin_hmap', height = 600)
+                             )
+                           ),
+                           br(),
+                           br(),
+                           tags$b("Overview of post-filtered mutations"),
+                           br(),
+                           br(),
+                           DTOutput("va_out"),
 
-                             DTOutput("va_out"),
-
-                             br(), br(),
-                             tags$b("Run"),
-                             br(),
-                             actionButton("va_exec", "Select variants"),
-                             br(),
-                             br(),
-                             ## tags$b("Result"),
-                             ## verbatimTextOutput("va_filters")
+                           br(), br(),
+                           tags$b("Run"),
+                           br(),
+                           actionButton("va_exec", "Select variants"),
+                           br(),
+                           br(),
+                           ## tags$b("Result"),
+                           ## verbatimTextOutput("va_filters")
+                             
+                             
                            ),
 
 
@@ -925,8 +964,17 @@ server <- function(input, output, session) {
   setwd(.my_pkg_dir) # per non disperdersi
 
   inputs <- list()
+  inputs[["null_reactiveVal"]] <- reactiveVal("")
+  
+  observe({
+    input$null_reactiveVal > 0
+  }, )
+  
   types_ <- reactiveVal()
 
+  session$onSessionEnded(function() {
+    stopApp()
+  })
 
   ## Source?
 
@@ -973,6 +1021,12 @@ server <- function(input, output, session) {
   ## js$addTooltip("av_anovar_db_dir", "IL BOTTONE", "")
   ## addPopover(session, "av_anovar_db_dir", "IL BOTTONE2", "e il polpettone", placement = "right")
 
+  observe({
+    #browser()
+    if (!is.null(input$close)) {
+      if (input$close > 0) stopApp()                             # stop shiny
+    }
+  }, )
 
   m_loaded_input_ <- reactiveVal()
   av_loaded_input_ <- reactiveVal()
@@ -1054,6 +1108,7 @@ server <- function(input, output, session) {
     if (inputs[["reload_project"]]() != 1 && inputs[["reload_project"]]() != 0)
     {
       if (dir.exists(proj_dir)) {
+        #browser()
         hide_tab()
         inputs[["reload_project"]](1)
         inputs[["pr_path"]](proj_dir)
@@ -1090,6 +1145,7 @@ server <- function(input, output, session) {
         if (dir.exists(tmp_path) && dir.exists(demo_dir))
         {
           #delay(100, {
+            #browser()
             hide_tab()
           #})
   
@@ -1129,14 +1185,17 @@ server <- function(input, output, session) {
 
   createmenuitem <- function(x, projs) {
     #browser()
-    menuSubItem(
-      text = names(projs)[x],
-      tabName = str_replace_all(
-        normalizePath(projs[[x]]),
-        pattern = .Platform$file.sep,
-        replacement = ","
+    if (dir.exists(projs[[x]]))
+      menuSubItem(
+        text = names(projs)[x],
+        tabName = str_replace_all(
+          normalizePath(projs[[x]]),
+          pattern = .Platform$file.sep,
+          replacement = ","
+        )
       )
-    )
+    else
+      NULL
   }
 
   observeEvent(input[["sidemenu"]], {
@@ -1178,7 +1237,38 @@ server <- function(input, output, session) {
 
       inputs[["reload_project"]](proj_dir)
     }
-
+    
+    if (input[["sidemenu"]] == "save_tab")
+      save_tab()
+    if (input[["sidemenu"]] == "load_tab")
+      load_tab()
+    if (input[["sidemenu"]] == "load_tabs")
+      load_tabs()
+    
+    if (input[["sidemenu"]] == "quit_app")
+      stopApp()
+    if (input[["sidemenu"]] == "new_proj"){
+      #inputs[["pr_path"]]("")
+      print("NEW project!!")
+      inputs[["pr_folder"]]("")
+      inputs[["pr_folder_std"]](.my_actual_wd)
+      inputs[["pr_name"]]("")
+      inputs[["pr_name_std"]]("")
+      
+      inputs[["project_folder_std"]](.my_actual_wd)
+      project_folder <- list( "path"="", "root"="")
+      project_folder$path[[1]]<-""
+      project_folder$path <-
+        c(project_folder$path,
+          as.list(path_split(path_rel(inputs[["project_folder_std"]](),
+                                      start = roots_dir[[".."]]))[[1]]))
+      project_folder$root=".."
+      inputs[["project_folder"]](project_folder)
+      
+      updateActionButton(session,"pr_folder", label=inputs[["pr_folder_std"]]())
+      updateTextInput(session,"pr_name", value=inputs[["pr_name_std"]]())
+      #inputs[["pr_path"]](.my_actual_wd) #not necessary
+    }
   }, ignoreInit = TRUE)
 
   # observe({
@@ -1190,7 +1280,7 @@ server <- function(input, output, session) {
   #   }
   # })
 
-  observeEvent(input[["save_tab"]], {
+  save_tab <- function () {
 
     if(!inputs[["project_loaded"]]()) {
       showNotification("No porject created or loaded.", duration = 10, type = "warning")
@@ -1200,6 +1290,7 @@ server <- function(input, output, session) {
     config_path <- file.path(inputs[["project_folder_std"]](), os_conf_subdir)
 
     grep_str <- NULL
+    #browser()
     if (input[["main_tabset"]] == "SC metadata") {
       grep_str <- m_grep_str
       config_file <- ".config_01_m.yml"
@@ -1226,12 +1317,13 @@ server <- function(input, output, session) {
       showNotification(paste(input[["main_tabset"]], "configuration tab saved"),
                        duration = 10)
     }
-  })
+    updateTabItems(session, "sidemenu", "hidden_menu")
+  }
 
 
 
 
-  observeEvent(input[["load_tab"]], {
+  load_tab <- function() {
 
     if(!inputs[["project_loaded"]]()) {
       showNotification("No porject created or loaded.", duration = 10, type = "warning")
@@ -1275,6 +1367,7 @@ server <- function(input, output, session) {
       }
       va_doLoad_c()
     } else if (input[["main_tabset"]] == "Inference") {
+      browser()
       inf_doLoad_a(config_path)
       uis <- inf_uis
       for(i in uis) {
@@ -1284,8 +1377,58 @@ server <- function(input, output, session) {
     }
 
     showNotification(paste(input[["main_tabset"]], "configuration tab loaded"), duration = 10)
-  })
+    
+    updateTabItems(session, "sidemenu", "hidden_menu")
+  }
 
+  load_tabs <- function() {
+    
+    if(!inputs[["project_loaded"]]()) {
+      showNotification("No porject created or loaded.", duration = 10, type = "warning")
+      return(NULL)
+    }
+    
+    config_path <- file.path(inputs[["project_folder_std"]](), os_conf_subdir)
+    m_doLoad_a(config_path)
+    m_doLoad_b()
+      
+    av_doLoad_a(config_path)
+    uis <- av_dir_uis
+    for (i in av_dir_uis) {
+      av_doLoad_b(i)
+    }
+    
+    thr_doLoad_a(config_path)
+    uis <- thr_uis
+    for(i in thr_uis) {
+      thr_doLoad_b(i)
+    }
+    
+    dp_doLoad_a(config_path)
+    uis <- dp_uis
+    for(i in dp_uis) {
+      dp_doLoad_b(i)
+    }
+      
+    va_doLoad_a(config_path) #
+    uis <- va_uis
+    for(i in va_uis) {
+      va_doLoad_b(i)
+    }
+    va_doLoad_c()
+    
+    browser()
+    inf_doLoad_a(config_path)
+    uis <- inf_uis
+    for(i in uis) {
+      inf_doLoad_b(i)
+    }
+    inf_doLoad_c()
+    
+    showNotification(paste("project", "configuration reset to saved state"), duration = 10)
+    
+    updateTabItems(session, "sidemenu", "hidden_menu")
+  }
 
 
   catch_ui_files_priority = 1
@@ -1373,6 +1516,8 @@ server <- function(input, output, session) {
     reactive(inputs[['va_minumum_median_mutation']]())
   va_out_dir_ <-
     reactive(parseDirPath(roots=roots_dir, inputs[['va_out_dir']]()))
+  
+  va_non_NA_genes_ <- reactiveVal(NULL)
   va_compute_output_ <- reactiveVal(NULL)
 
   files_ <- reactiveVal(NULL)
@@ -1389,6 +1534,7 @@ server <- function(input, output, session) {
   ### Variational functions ####
 
   va_exec <- function () {
+    #browser()
 
     if (length(va_out_dir_()) == 0)
       return()
@@ -1397,16 +1543,26 @@ server <- function(input, output, session) {
         !is.integer(inputs[['dp_out_dir']]())) {
       if (dir.exists(thr_out_dir_()) &&
           dir.exists(dp_out_dir_())) {
-        # NA_compute(va_depth_minimum_(),
-        #            va_missing_values_max_(),
-        #            thr_out_dir_(),
-        #            dp_out_dir_(),
-        #            va_out_dir_(),
-        #            inputs[['m_time_points']]())
+        
+        #browser()
+        
+        valid_genes_names <-
+          NA_compute(va_depth_minimum_(),
+                   va_missing_values_max_(),
+                   thr_out_dir_(),
+                   dp_out_dir_(),
+                   va_out_dir_(),
+                   inputs[['m_time_points']]())
+        
+        va_non_NA_genes_(valid_genes_names)
+        
+        #browser()
+        
         files <- NA_compute2_load(thr_out_dir_(),
                                   dp_out_dir_(),
                                   va_out_dir_())
         files_(files)
+        
       } else
         showNotification(paste("Annotated VCF folder does not exist"),
                          duration = 10,
@@ -1427,7 +1583,10 @@ server <- function(input, output, session) {
           dir.exists(dp_out_dir_()))
 
         if (any(!sapply(files_(), is.null))){ # files not found
-          cells_aggregate_info <-
+          
+          #browser()
+          
+          NA_c2 <-
             NA_compute2(va_depth_minimum_(),
                         va_minumum_median_total_(),
                         va_minumum_median_mutation_(),
@@ -1436,9 +1595,16 @@ server <- function(input, output, session) {
                         va_out_dir_(),
                         inputs[['m_time_points']](),
                         verified_genes_(),
+                        va_non_NA_genes_(),
                         files_())
-          va_compute_output_(cells_aggregate_info)
-
+          #browser()
+          va_compute_output_(NA_c2$distinct_mutations)
+          
+          #ggsave(file=file.path(inputs[["project_folder_std"]](),"D.svg"), plot=NA_c2$g, width=10, height=10)
+          
+          output$va_filtered_bin_hmap <- renderPlot({
+            NA_c2$g
+          }, height = 600)
 
 
         } else {
@@ -1524,6 +1690,8 @@ server <- function(input, output, session) {
           ref_files2[which.min(str_length(ref_files2))]
         ref_files2 <-
           file.path(av_anovar_db_dir_(), ref_files2)
+        
+        
         if (length(file.exists(ref_files2))>0) {
           if (file.exists(ref_files2)) {
             ref_info <-
@@ -1532,11 +1700,8 @@ server <- function(input, output, session) {
                          sep = '\t',
                          stringsAsFactors = FALSE)
             list_gene_symbols <- ref_info[, 13] 
-            inputs[['va_list_genes']](list_gene_symbols)
-            updateSelectizeInput(session,
-                                 'va_verified_genes',
-                                 choices = inputs[['va_list_genes']](),
-                                 server = TRUE)
+            
+            
             ## if (file.exists(file.path( av_anovar_db_dir_(), "snpMut_filt_freq.rds"))){
             ##  print('LOAD FILE2')
             ##  snpMut_filt_freq <- readRDS(file=paste0(file.path( thr_out_dir_(), "snpMut_filt_freq.rds")))
@@ -1549,6 +1714,19 @@ server <- function(input, output, session) {
                              type = "warning")
           }
         }
+        
+        #not necessary
+        if (file.exists(file.path( va_out_dir_(), "snpMut_filt_freq_reduced.rds"))) {
+          snpMut_filt_freq <- readRDS(file=paste0(file.path( va_out_dir_(), "snpMut_filt_freq_reduced.rds")))
+          inputs[['va_list_genes']](sort(unique(snpMut_filt_freq$Gene)))
+        } else
+          inputs[['va_list_genes']](list_gene_symbols)
+        
+        updateSelectizeInput(session,
+                             'va_verified_genes',
+                             choices = inputs[['va_list_genes']](),
+                             selected = inputs[['va_verified_genes']](),
+                             server = TRUE)
 
       }
     }
@@ -1556,32 +1734,57 @@ server <- function(input, output, session) {
 
 
   observeEvent(input[['va_verified_genes']], {
-    ## req(input)
+    #req(input[['va_verified_genes']])
+    #browser()
     inputs[['va_verified_genes']](input[['va_verified_genes']])
-  })
+  }, ignoreNULL = FALSE)
 
   
   
   
   va_iv <- InputValidator$new()
-  va_iv$add_rule("va_depth_minimum", sv_between(1,100))
+  va_iv$add_rule("va_depth_minimum", sv_between(0,500))
   va_iv$add_rule("va_missing_values_max", sv_between(0.,1.))
-  va_iv$add_rule("va_minumum_median_total", sv_between(0.,50.))
-  va_iv$add_rule("va_minumum_median_mutation", sv_between(0.,50.))
+  va_iv$add_rule("va_minumum_median_total", sv_between(0,500))
+  va_iv$add_rule("va_minumum_median_mutation", sv_between(0,500))
   va_iv$enable()
 
   observeEvent(input$va_exec,{
     req(va_iv$is_valid())
-    va_exec()
+    #browser()
+    
+    va_exec() 
+    
+    
+    if (file.exists(file.path( va_out_dir_(), "snpMut_filt_freq_reduced.rds"))) {
+      snpMut_filt_freq <- readRDS(file=paste0(file.path( va_out_dir_(), "snpMut_filt_freq_reduced.rds")))
+      inputs[['va_list_genes']](sort(unique(snpMut_filt_freq$Gene)))
+    }
+    
+    updateSelectizeInput(session,
+                         'va_verified_genes',
+                         choices = inputs[['va_list_genes']](),
+                         selected = inputs[['va_verified_genes']](),
+                         server = TRUE)
+    
+    va_exec2()
+    #browser()
+    #print("a")
   })
 
 
-  observeEvent({ c(files_(),
+  observeEvent({ c(#files_(),
                    va_depth_minimum_(),
                    va_missing_values_max_(),
                    va_minumum_median_total_(),
-                   va_minumum_median_mutation_(), verified_genes_())
-  }, { va_exec2() },
+                   va_minumum_median_mutation_(),
+                   verified_genes_()
+                   )
+  }, 
+  { 
+    va_exec()
+    va_exec2() 
+  },
   ignoreNULL = FALSE,
   ignoreInit = TRUE)
 
@@ -1592,13 +1795,13 @@ server <- function(input, output, session) {
 
   output$va_out <-
     DT::renderDT(va_compute_output_(), server = TRUE)
-  output[['va_verified_genes']] <-
-    renderText(inputs[['va_verified_genes']]())
-  output[['va_list_genes']] <-
-    renderPrint(inputs[['va_list_genes']]())
-  output[['va_out_dir']] <-
-    renderText(parseDirPath(roots = roots_dir,
-                            inputs[['va_out_dir']]()))
+  #output[['va_verified_genes']] <-
+  #  renderText(inputs[['va_verified_genes']]())
+  #output[['va_list_genes']] <-
+  #  renderPrint(inputs[['va_list_genes']]())
+  #output[['va_out_dir']] <-
+  #  renderText(parseDirPath(roots = roots_dir,
+  #                          inputs[['va_out_dir']]()))
 
   output[['va_filters']] <-
     renderPrint({
@@ -1625,7 +1828,7 @@ server <- function(input, output, session) {
 
   ###
   for (dir_ui in dp_uis) {
-    # defaultPath <- ""
+    defaultPath <- ""
     # if(dir_ui == "dp_samtools_exec_dir")
     #   defaultPath <- path_rel(dirname(Sys.which("samtools")), start = "..")
 
@@ -1969,7 +2172,8 @@ server <- function(input, output, session) {
                         InFilesToDo,
                         OutFilesToRm)
 
-        filter3_compute(thr_vcf_in_dir_(),
+        snpMut_filt_freq <- filter3_compute(
+                        thr_vcf_in_dir_(),
                         sc_metadata_(),
                         thr_alleles_ratio_(),
                         thr_maf_(),
@@ -1980,7 +2184,15 @@ server <- function(input, output, session) {
                         inputs[['m_time_points']](),
                         InFilesToDo,
                         OutFilesToRm)
-
+        
+        inputs[['va_list_genes']](sort(unique(snpMut_filt_freq$Gene)))
+        
+        updateSelectizeInput(session,
+                             'va_verified_genes',
+                             choices = inputs[['va_list_genes']](),
+                             selected = inputs[['va_verified_genes']](),
+                             server = TRUE)
+        
         return(read_file(file.path(thr_vcf_in_dir_(),
                                    'stdout.log')))
       } else
@@ -2065,6 +2277,20 @@ server <- function(input, output, session) {
   },
   once = TRUE,
   priority = -1)
+  
+  #observeEvent(input[['thr_accepted_var']],
+  #             {
+                 #browser()
+                 #print(input[['thr_accepted_var']])
+                 #print(inputs[['thr_accepted_var']]())
+  #             })
+  
+  #observeEvent(inputs[['thr_accepted_var']](),
+  #             {
+                 #browser()
+                 #print(input[['thr_accepted_var']])
+                 #print(inputs[['thr_accepted_var']]())
+  #             })
 
   output$thr_bucket_var_list <-
     renderUI({
@@ -2108,8 +2334,8 @@ server <- function(input, output, session) {
     })
 
   thr_iv <- InputValidator$new()
-  thr_iv$add_rule("thr_alleles_ratio", sv_between(0,1))
-  thr_iv$add_rule("thr_maf", sv_between(0.,0.5))
+  thr_iv$add_rule("thr_alleles_ratio", sv_between(1,55))
+  thr_iv$add_rule("thr_maf", sv_between(0.01,0.5))
   thr_iv$add_rule("thr_freq", sv_between(0.,1.))
   thr_iv$enable()
   ### Threshold observers ####
@@ -2216,7 +2442,7 @@ server <- function(input, output, session) {
     Opt$ExtraFiles = NULL
 
     chk_files <- OneInOneOut(av_vcf_in_dir_(),
-                             InFilesMask = ".*filtered.vcf$",
+                             InFilesMask = ".*vcf$",
                              av_vcf_out_dir_(),
                              OutExt =
                                "anninput.exonic_variant_function",
@@ -2290,7 +2516,7 @@ server <- function(input, output, session) {
   ### Annotation observers ####
 
   for (dir_ui in av_dir_uis) { #av_rvs$buttons???
-    # defaultPath <- ""
+    defaultPath <- ""
     # if(dir_ui == "av_anovar_exec_dir")
     #   defaultPath <- path_rel(Sys.which("annotate_variation.pl"), start = "..")
     shinyDirChoose(input,

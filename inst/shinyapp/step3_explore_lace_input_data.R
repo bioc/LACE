@@ -3,7 +3,7 @@
 #################################################
 NA_compute <- function(depth_minimum, missing_values_max, data_dir, depth_dir, out_dir, time_points) {
   # set working directory
-
+  browser()
   #library(stringr)
 
   #depth_minimum = 3 # minimum depth to set values to NA
@@ -43,39 +43,58 @@ NA_compute <- function(depth_minimum, missing_values_max, data_dir, depth_dir, o
 
   # evaluate number of missing data per time point
   time_points_NA = list()
-  for (t in time_points)
-    time_points_NA[[t]] = NULL
+  #for (t in time_points)
+  #  time_points_NA[[t]] = NULL
+  #
+  ##browser()
+  #for (t in time_points)
+  #  for(i in 1:ncol(mycellsdata[[1]]))
+  #    time_points_NA[[t]] = c(time_points_NA[[t]],length(which(is.na(mycellsdata[[t]][,i])))/nrow(mycellsdata[[t]]))
 
-  for(i in 1:ncol(mycellsdata[[1]]))
-    for (t in time_points)
-      time_points_NA[[t]] = c(time_points_NA[[t]],length(which(is.na(mycellsdata[[t]][,i])))/nrow(mycellsdata[[t]]))
-
-  #valid_genes = sort(unique(colnames(mycellsdata[[1]])[which(all(time_points_NA<=missing_values_max))]))
-  valid_genes = colSums(do.call(rbind, lapply(time_points_NA, function(x){x<=missing_values_max})))
+  time_points_NA = list()
+  for (t in time_points) 
+    time_points_NA[[t]] <- colSums(is.na(mycellsdata[[t]]))/nrow(mycellsdata[[t]])
+  
+  ##valid_genes = sort(unique(colnames(mycellsdata[[1]])[which(all(time_points_NA<=missing_values_max))]))
+  #valid_genes = colSums(do.call(rbind, lapply(time_points_NA, function(x){x<=missing_values_max})))
+  
+  #valid_genes <- colnames(mycellsdata[[1]])[apply(do.call(rbind, lapply(time_points_NA, function(x){x<=missing_values_max})), FUN = all, MARGIN = 2)]
+  # browser()
+  valid_genes <- colnames(mycellsdata[[1]])[apply(bind_rows(lapply(time_points_NA, function(x){x<=missing_values_max})), FUN = all, MARGIN = 2)]
+  #valid_genes <- colnames(mycellsdata[[1]])[(data.frame(bind_rows(time_points_NA)<=missing_values_max) %>% rowwise() %>% mutate(y=all(c_across(everything())) ))$y]
   valid = NULL
 
-  for(i in valid_genes) {
-    valid = c(valid,unique(snpMut_filt_freq$Gene[grep(i,snpMut_filt_freq$UIDsnp)]))
-  }
-  valid = paste0(valid,"_",valid_genes)
-
+  
+  #for(i in valid_genes) {
+  #  valid = c(valid,unique(snpMut_filt_freq$Gene[grep(i,snpMut_filt_freq$UIDsnp)]))
+  #}
+  
+  #valid = paste0(valid,"_",valid_genes)
+  valid = unique(grep(paste0(valid_genes, collapse = "|"), unique(snpMut_filt_freq$UIDsnp), value = T ))
 
   # get names of valid genes
   valid_genes_names = NULL
   #for(i in valid) {
   #  valid_genes_names = c(valid_genes_names,strsplit(i,split="_")[[1]][[1]])
   #}
-  valid_genes_names <- str_split_fixed(valid[1:4],"_", n=2 )[,1]
+  #browser()
+  valid_genes_names <- str_split_fixed(valid,"_", n=2 )[,1]
 
   log2_print(length(valid_genes_names), msg = "NA_compute: # valid genes")
   log2_print(length(unique(valid_genes_names)))
   log2_print(sort(valid_genes_names[which(duplicated(valid_genes_names))]))
 
   # make final list of candidate selected variants
-  snpMut_filt_freq_reduced = unique(snpMut_filt_freq[which(snpMut_filt_freq$Gene%in%valid_genes_names),c("Gene","Chr","PosStart","PosEnd","REF","ALT")])
+  #snpMut_filt_freq_reduced = unique(snpMut_filt_freq[which(snpMut_filt_freq$Gene%in%valid_genes_names),c("Gene","Chr","PosStart","PosEnd","REF","ALT")])
+  snpMut_filt_freq_reduced = unique(snpMut_filt_freq[which(snpMut_filt_freq$Gene%in%valid_genes_names), ])
   snpMut_filt_freq_reduced = snpMut_filt_freq_reduced[order(snpMut_filt_freq_reduced[,1],snpMut_filt_freq_reduced[,2],snpMut_filt_freq_reduced[,3],snpMut_filt_freq_reduced[,4],snpMut_filt_freq_reduced[,5],snpMut_filt_freq_reduced[,6]),]
 
-  write.table(snpMut_filt_freq_reduced,file=file.path(out_dir,"snpMut_filt_freq_reduced.txt"),append=FALSE,quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+  saveRDS(snpMut_filt_freq_reduced, file=file.path(out_dir,"snpMut_filt_freq_reduced.rds"))
+  #write.table(snpMut_filt_freq_reduced,file=file.path(out_dir,"snpMut_filt_freq_reduced.txt"),append=FALSE,quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+  
+  #browser()
+  
+  return(valid_genes_names)
 
 }
 

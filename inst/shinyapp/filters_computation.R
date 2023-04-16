@@ -28,19 +28,19 @@
                   full.names = TRUE)
 
 
-    # - log2_print(InFilesToDo)
+    log2_print(InFilesToDo)
     if (!is.null(InFilesToDo)) {
-      # - log2_print('In')
-      # - log2_print(listSC)
+      log2_print('In')
+      log2_print(listSC)
       listSC <- listSC[listSC %in% InFilesToDo]
-      # - log2_print(listSC)
+      log2_print(listSC)
     }
     if (!is.null(OutFilesToRm)) {
-      # - log2_print('Out')
+      log2_print('Out')
       ## OutFilesToRm <- file.path(thr_out_dir, OutFilesToRm)
-      # - log2_print(OutFilesToRm)
+      log2_print(OutFilesToRm)
       ## file.remove(OutFilesToRm)
-      # - log2_print(list.files(path = thr_out_dir))
+      log2_print(list.files(path = thr_out_dir))
     }
 
     if (length(listSC) == 0)
@@ -219,19 +219,19 @@
                   ignore.case = TRUE,
                   full.names = TRUE)
 
-    # - log2_print(InFilesToDo)
+    log2_print(InFilesToDo)
     if (!is.null(InFilesToDo)) {
-      # - log2_print('In')
-      # - log2_print(listSC)
+      log2_print('In')
+      log2_print(listSC)
       listSC <- listSC[listSC %in% InFilesToDo]
-      # - log2_print(listSC)
+      log2_print(listSC)
     }
     if (!is.null(OutFilesToRm)) {
-      # - log2_print('Out')
+      log2_print('Out')
       ## OutFilesToRm <- file.path(thr_out_dir, OutFilesToRm)
-      # - log2_print(OutFilesToRm)
+      log2_print(OutFilesToRm)
       ## file.remove(OutFilesToRm)
-      # - log2_print(list.files(path = thr_out_dir))
+      log2_print(list.files(path = thr_out_dir))
     }
 
     if (length(listSC)==0)
@@ -242,7 +242,8 @@
 
     scMutInfo <-
       scMutInfo[((!is.na(scMutInfo$Allele_Ratio)) &
-                   (scMutInfo$Allele_Ratio >= thr_alleles_ratio)),]
+                   (scMutInfo$Allele_Ratio >= thr_alleles_ratio#*scMutInfo$depth
+                    )),]
 
     mutWOrs <- scMutInfo[scMutInfo$rs_ID == ".", ]
     mutWrs <- scMutInfo[scMutInfo$rs_ID != ".", ]
@@ -267,9 +268,16 @@
       return(TRUE)
     }
 
-    mutWrs_filt <- mutWrs[apply(mutWrs,
-                                1,
-                                function(x) FilterMutations(x)), ]
+    #mutWrs_filt <- mutWrs[apply(mutWrs,
+    #                            1,
+    #                            function(x) FilterMutations(x)), ]
+    
+    mutWrs_filt <-  mutWrs[
+      (!(
+        (mutWrs$minor_allele == mutWrs$ALT) & (mutWrs$minor_allele_freq > thr_maf) |
+          (mutWrs$minor_allele == mutWrs$REF) & (mutWrs$minor_allele_freq < (1-thr_maf))
+      )) & (mutWrs$rs_ID=="."),]
+    
     snpMut_filt <- rbind(mutWOrs, mutWrs_filt)
     saveRDS(snpMut_filt,
             file = paste0(file.path(thr_out_dir, 'snpMut_filt.rds')))
@@ -298,20 +306,20 @@
                   ignore.case = TRUE,
                   full.names = TRUE)
 
-    # - log2_print(InFilesToDo)
+    log2_print(InFilesToDo)
     if (!is.null(InFilesToDo)) {
-      # - log2_print('In')
-      # - log2_print(listSC)
+      log2_print('In')
+      log2_print(listSC)
       listSC <- listSC[listSC %in% InFilesToDo]
-      # - log2_print(listSC)
+      log2_print(listSC)
     }
 
     if (!is.null(OutFilesToRm)) {
-      # - log2_print('Out')
+      log2_print('Out')
       ## OutFilesToRm <- file.path(thr_out_dir, OutFilesToRm)
-      # - log2_print(OutFilesToRm)
+      log2_print(OutFilesToRm)
       ## file.remove(OutFilesToRm)
-      # - log2_print(list.files(path = thr_out_dir))
+      log2_print(list.files(path = thr_out_dir))
     }
 
     if (length(listSC) == 0)
@@ -344,6 +352,8 @@
     saveRDS(snpMut_filt_freq,
             file = paste0(file.path(thr_out_dir,
                                     'snpMut_filt_freq.rds')))
+    
+    return(snpMut_filt_freq)
   }
 
 ### end of file -- filters_computation.R

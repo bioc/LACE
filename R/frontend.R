@@ -55,7 +55,7 @@
 # #' @import SummarizedExperiment
 #' @import data.tree
 #' @importFrom Rfast rowMaxs
-#' @importFrom stats runif rnorm
+#' @importFrom stats runif rnorm setNames
 #'
 LACE <- function( D,
                   lik_w = NULL,
@@ -439,12 +439,13 @@ lacedata <- function( D,
   error_rates <- inference_res$error_rates
   
   if (!is.null(B) && !is.null(C) && !is.null(clones_prevalence) && !is.null(error_rates)) {
-    x <- LACE:::lace_interface(
+    x <- lace_interface(
       B_mat = B,
       clones_prevalence = clones_prevalence,
       C_mat = C,
       error_rates = error_rates
     )
+    x <- x[["html"]]
     return(x)
   }
   else
